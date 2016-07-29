@@ -37,6 +37,9 @@
         // 3. This function creates an <iframe> (and YouTube player)
         //    after the API code downloads.
         var player;
+        var intervals = $('li').map(function() {
+            return $(this).data('interval');
+        }).get();
         function onYouTubeIframeAPIReady() {
           player = new YT.Player('player', {
             height: '315',
@@ -51,7 +54,7 @@
 
         // 4. The API will call this function when the video player is ready.
         function onPlayerReady(event) {
-          // event.target.playVideo();
+            pollTimeChange(intervals); // TO REMOVE
         }
 
         // 5. The API calls this function when the player's state changes.
@@ -59,6 +62,9 @@
         //    the player should play for six seconds and then stop.
         var done = false;
         function onPlayerStateChange(event) {
+          if (event.data == YT.PlayerState.PLAYING) {
+            pollTimeChange(intervals);
+          }
           if (event.data == YT.PlayerState.PLAYING && !done) {
             setTimeout(stopVideo, 6000);
             done = true;
@@ -66,6 +72,31 @@
         }
         function stopVideo() {
           player.stopVideo();
+        }
+        function pollTimeChange() {
+          var interval = setInterval(function(){
+            var myMatch;
+            var currTime = player.getCurrentTime(),
+                isMatch = $.grep(intervals, function( n ) {
+                  myMatch = n;
+                  return ( n === currTime ); 
+                });
+                console.log('isMatch: ',isMatch, currTime);
+            if(isMatch){
+                // clearInterval(interval);
+                var myEl = $('li').filter(function(){
+                  console.log('filtered: ',$(this).attr('data-interval'), 'myMatch: ',myMatch);
+                  return $(this).attr('data-interval') === myMatch
+                });
+                // console.log(myEl);
+                setActiveStep($(myEl));
+            }
+          },1000);
+        }
+        function setActiveStep(myEl) {
+          console.log('myEl: ',myEl);
+          $('li').removeClass('active');
+          $(myEl).addClass('active');
         }
       </script>
       <!-- Custom -->
@@ -82,7 +113,6 @@
           }
 
           function goToTimecode(step) {
-            console.log('step: ',step);
             var seconds = 0;
             if(player){
                 seconds += step;
