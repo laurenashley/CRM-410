@@ -18,9 +18,9 @@
         <h2>Cooking Steps</h2>
         <ul>
           <li data-interval="0" class="active">In a heavy 2-quart saucepan, mix cocoa powder and sugar.</li>
-          <li data-interval="15">Over medium-high heat, gradually whisk milk and 1/2 cup of the whipping cream. Simmer gently 25 to 35 minutes.</li>
-          <li data-interval="40">Meanwhile, whip remaining 1/2 cup whipping cream and the sour cream to form soft peaks; refrigerate.
-          <li data-interval="60">Remove cocoa mixture from heat and add the chopped chocolate; stir until chocolate is completely melted.</li>
+          <li data-interval="5">Over medium-high heat, gradually whisk milk and 1/2 cup of the whipping cream. Simmer gently 25 to 35 minutes.</li>
+          <li data-interval="8">Meanwhile, whip remaining 1/2 cup whipping cream and the sour cream to form soft peaks; refrigerate.
+          <li data-interval="15">Remove cocoa mixture from heat and add the chopped chocolate; stir until chocolate is completely melted.</li>
           <li data-interval="120">Spoon 2 tablespoons hot cocoa mixture into each of the four 8-ounce.</li>
           <li data-interval="180">Top each with a scoop of ice cream and 2 tablespoons of whipped cream; repeat layer once, ending with whipped cream.</li>
         </ul>
@@ -54,47 +54,45 @@
 
         // 4. The API will call this function when the video player is ready.
         function onPlayerReady(event) {
-            pollTimeChange(intervals); // TO REMOVE
+            // pollTimeChange(intervals); // TO REMOVE
         }
 
         // 5. The API calls this function when the player's state changes.
         //    The function indicates that when playing a video (state=1),
         //    the player should play for six seconds and then stop.
         var done = false;
+        var interval = null;
         function onPlayerStateChange(event) {
           if (event.data == YT.PlayerState.PLAYING) {
-            pollTimeChange(intervals);
+            pollTimeChange(false);
           }
-          if (event.data == YT.PlayerState.PLAYING && !done) {
-            setTimeout(stopVideo, 6000);
-            done = true;
+          if (event.data == YT.PlayerState.PAUSED) {
+            clearInterval(interval);
+            pollTimeChange(true);
+          }
+          if (event.data == YT.PlayerState.STOPPED) {
+            stopVideo();
           }
         }
         function stopVideo() {
           player.stopVideo();
         }
-        function pollTimeChange() {
-          var interval = setInterval(function(){
-            var myMatch;
-            var currTime = player.getCurrentTime(),
+        function pollTimeChange(stopPolling) {
+          interval = setInterval(function(){
+            var currTime = parseInt(player.getCurrentTime()),
                 isMatch = $.grep(intervals, function( n ) {
-                  myMatch = n;
                   return ( n === currTime ); 
                 });
-                console.log('isMatch: ',isMatch, currTime);
-            if(isMatch){
-                // clearInterval(interval);
-                var myEl = $('li').filter(function(){
-                  console.log('filtered: ',$(this).attr('data-interval'), 'myMatch: ',myMatch);
-                  return $(this).attr('data-interval') === myMatch
-                });
-                // console.log(myEl);
-                setActiveStep($(myEl));
+            if (stopPolling) {
+              clearInterval(interval);
+              return;
+            } else if (isMatch.length === 1){
+              var myEl = $('ul').find('li[data-interval="' + currTime + '"]');
+              setActiveStep(myEl);
             }
           },1000);
         }
         function setActiveStep(myEl) {
-          console.log('myEl: ',myEl);
           $('li').removeClass('active');
           $(myEl).addClass('active');
         }
